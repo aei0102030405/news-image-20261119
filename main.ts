@@ -1,8 +1,8 @@
 // news-image-20261119 — one image summing up Thursday 19 November 2026.
 // A Node 22 program, standard library only. It draws a newspaper front page
-// (masthead, date, six stories) with a built-in 5x7 bitmap font and writes
-// it as a PNG to /output/entry.png. No network, no clock, no randomness:
-// every run produces the same bytes.
+// (masthead, date, six stories, also-in-the-news strip) with a built-in
+// 5x7 bitmap font and writes it as a PNG to /output/entry.png.
+// No network, no clock, no randomness: every run produces the same bytes.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
@@ -231,6 +231,25 @@ const STORIES: Story[] = [
   },
 ];
 
+// Three more briefs for the bottom strip: verified 19 November 2026
+// items that did not make the six main stories.
+type Brief = { tag: string; text: string };
+
+const BRIEFS: Brief[] = [
+  {
+    tag: "US:",
+    text: "DEMOCRATS NOMINATE JEFFRIES FOR HOUSE SPEAKER",
+  },
+  {
+    tag: "EU:",
+    text: "45BN EURO LOAN PROPOSED FOR UKRAINE",
+  },
+  {
+    tag: "MARKETS:",
+    text: "OIL PRICES FALL AS SUPPLIES IMPROVE",
+  },
+];
+
 // ---------------------------------------------------------------- layout
 const MARGIN = 48;
 const RIGHT = W - MARGIN;
@@ -239,6 +258,12 @@ function drawTagChip(x: number, y: number, label: string): void {
   const w = textWidth(label, 2) + 20;
   rect(x, y, w, 26, RED);
   drawText(x + 10, y + 6, label, 2, WHITE);
+}
+
+// One brief line: a red tag, then the item text in ink.
+function drawBrief(x: number, y: number, tag: string, text: string): void {
+  drawText(x, y, tag, 2, RED);
+  drawText(x + textWidth(tag, 2) + 12, y, text, 2, INK);
 }
 
 function drawPage(): void {
@@ -259,8 +284,9 @@ function drawPage(): void {
   drawText(MARGIN, 262, LEAD.summary, 2, INK);
   hrule(MARGIN, 296, RIGHT - MARGIN, 1, GREY);
 
-  // The five remaining stories, one row each.
-  const rows = [316, 428, 540, 652, 764];
+  // The five remaining stories, one row each. Rows sit 110 px apart so the
+  // last rule lands at y850, leaving room below the footer for the strip.
+  const rows = [316, 426, 536, 646, 756];
   for (let i = 0; i < STORIES.length; i++) {
     const s = STORIES[i];
     const y0 = rows[i];
@@ -274,10 +300,18 @@ function drawPage(): void {
     hrule(MARGIN, y0 + 94, RIGHT - MARGIN, 1, GREY);
   }
 
-  // Footer.
-  hrule(MARGIN, 884, RIGHT - MARGIN, 3, INK);
-  drawTextCentered(Math.floor(W / 2), 904, "MAKE.FUN - ONE DAY'S NEWS IN ONE IMAGE", 2, INK);
-  drawTextCentered(Math.floor(W / 2), 928, "STORIES AS REPORTED ON THURSDAY 19 NOVEMBER 2026", 2, INK);
+  // Footer, moved up to make room for the bottom strip.
+  hrule(MARGIN, 868, RIGHT - MARGIN, 3, INK);
+  drawTextCentered(Math.floor(W / 2), 886, "MAKE.FUN - ONE DAY'S NEWS IN ONE IMAGE", 2, INK);
+  drawTextCentered(Math.floor(W / 2), 908, "STORIES AS REPORTED ON THURSDAY 19 NOVEMBER 2026", 2, INK);
+
+  // Also-in-the-news strip: three briefs filling the paper below the footer.
+  hrule(MARGIN, 932, RIGHT - MARGIN, 1, GREY);
+  drawText(MARGIN, 942, "ALSO IN THE NEWS", 2, RED);
+  const briefRows = [962, 979, 996];
+  for (let i = 0; i < BRIEFS.length; i++) {
+    drawBrief(MARGIN, briefRows[i], BRIEFS[i].tag, BRIEFS[i].text);
+  }
 }
 
 // ---------------------------------------------------------------- main
